@@ -22,6 +22,9 @@ pub struct Args {
 
     #[arg(long = "directory", help = "Only scan common directories")]
     pub directory: bool,
+
+    #[arg(long = "cf", help = "Return if cloudflare is present")]
+    pub cloudflare: bool,
     // #[arg(short = 'v', long = "verbose", help = "detailed output whilst working!!")]
     // pub verbose: bool,
 }

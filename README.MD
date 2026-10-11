@@ -33,6 +33,10 @@ Retrieves web certificate information from CTlogs.
 webbooper -u https://example.com -o results.txt
 *Output to file*
 
+NS/Cloudflare check only
+webbooper -u https://exmaple.com --cf 
+Retrieves NS from targeted domain using dns.google to resolve Has a targeted check if a NS contains cloudflare
+
 webbooper -u https://example.com --upload <webhook>
 Allows the results to be sent to a webhook or other server that accepts the request.
 Note: Due to the amount of data a scan can return, webhook uploads can be unstable.

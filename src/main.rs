@@ -4,6 +4,7 @@ mod utils;
 use clap::Parser;
 use cli::Args;
 
+use crate::utils::cloudflare;
 use crate::utils::directory_scan;
 use crate::utils::subdomain_scan;
 use crate::utils::upload_scan;
@@ -13,7 +14,7 @@ use crate::utils::webcert_scan;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    let specific_scan = args.directory || args.subdomains || args.webcert;
+    let specific_scan = args.directory || args.subdomains || args.webcert || args.cloudflare;
 
     println!("WebBooper - A Rust-based web scanning tool");
 
@@ -74,6 +75,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         results.push('\n');
     }
 
+    if args.cloudflare {
+        println!("[+] Retrieving Domain Nameservers");
+        let ns_records = cloudflare(args.url.as_ref().unwrap()).await?;
+        println!("[+] Found {} nameservers\n", ns_records.len());
+        results.push_str("[+] NAMESERVER SCAN\n");
+        results.push_str("--------------------------------\n");
+        let mut uses_cloudflare = false;
+        for ns in ns_records {
+            println!("Nameserver: {}", ns);
+            results.push_str(&format!("Nameserver: {}\n", ns));
+            // Check if the nameserver belongs to Cloudflare
+            if ns.to_lowercase().contains("cloudflare.com") {
+                uses_cloudflare = true;
+            }
+        }
+        if uses_cloudflare {
+            println!("[!] Cloudflare detected: OK");
+            results.push_str("[!] Cloudflare NS Detected ! : OK\n");
+        } else {
+            println!("[.] Cloudflare not detected");
+            results.push_str("[.] Cloudflare not detected\n");
+        }
+        results.push('\n');
+    }
+
     if !specific_scan {
         println!("[+] No specific scan selected");
         println!("[+] Starting full scan...");
@@ -94,6 +120,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         for subdomain in subdomains {
             println!("{}", subdomain);
             results.push_str(&format!("{}\n", subdomain));
+        }
+
+        results.push('\n');
+
+        println!("\n[+] Nameserver scan");
+        let ns_records = cloudflare(args.url.as_ref().unwrap()).await?;
+        results.push_str("--------------------------------\n");
+        results.push_str("[+] NAMESERVER SCAN\n");
+        results.push_str("--------------------------------\n");
+        let mut uses_cloudflare = false;
+        for ns in ns_records {
+            println!("Nameserver: {}", ns);
+            results.push_str(&format!("Nameserver: {}\n", ns));
+
+            if ns.to_lowercase().contains("cloudflare.com") {
+                uses_cloudflare = true;
+            }
+        }
+        if uses_cloudflare {
+            println!("[!] Cloudflare detected: OK");
+            results.push_str("[!] Cloudflare NS Detected ! : OK\n");
+        } else {
+            println!("[.] Cloudflare not detected");
+            results.push_str("[.] Cloudflare not detected\n");
         }
 
         results.push('\n');

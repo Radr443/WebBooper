@@ -13,6 +13,7 @@ pub struct ScanResults {
     pub subdomains: Option<Vec<String>>,
     pub certificates: Option<Vec<certificate>>,
     pub paths: Option<Vec<String>>,
+    pub cloudflare: Option<Vec<String>>,
 }
 
 pub struct Wordlist {
@@ -69,6 +70,17 @@ pub struct certificate {
     pub san_count: u32,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct DNSanswer {
+    data: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct cloudresponse {
+    #[serde(rename = "Answer")]
+    answer: Option<Vec<DNSanswer>>,
+}
+
 pub fn clear_url(url: &str) -> String {
     let url = url.trim();
     let url = url.trim_start_matches("http://");
@@ -106,6 +118,22 @@ pub async fn directory_scan(url: &str) -> Result<Vec<String>, Box<dyn std::error
         results.push(result);
     }
     Ok(results)
+}
+
+pub async fn cloudflare(url: &str) -> reqwest::Result<Vec<String>> {
+    let check = clear_url(url);
+    let endpoint = format!("https://dns.google/resolve?name={}&type=NS", check);
+    let response = reqwest::get(endpoint).await?;
+    let data: cloudresponse = response.error_for_status()?.json().await?;
+    let mut nameservers = Vec::new();
+
+    if let Some(answers) = data.answer {
+        for answer in answers {
+            let clean_ns = answer.data.trim_end_matches('.').to_string();
+            nameservers.push(clean_ns);
+        }
+    }
+    Ok(nameservers)
 }
 
 pub async fn upload_scan(upload: &str, results: &str) -> Result<(), reqwest::Error> {
