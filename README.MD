@@ -5,6 +5,7 @@ Boops websites with 3 common reconnaissance techniques:
 - Web certificate information
 - Directory enumeration
 - Subdomain discovery
+- NS Discovery
 
 It's mainly a project for learning Rust, web requests, and building security tooling.
 
